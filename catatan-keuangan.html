@@ -52,14 +52,58 @@
   .navlink:hover { background:#F6F5EF; color:#14231d; }
   .navlink.active { background:#14231d; color:#F6F5EF; }
   @media (max-width: 1023px) {
-    #sidebar { position: fixed; inset: 0 auto 0 0; z-index: 50; box-shadow: 0 0 0 9999px rgba(0,0,0,0); }
+    #sidebar { position: fixed; inset: 0 auto 0 0; z-index: 50; }
     #sidebar:not(.collapsed) { box-shadow: 0 0 0 9999px rgba(20,35,29,0.4); }
     #sidebar.collapsed { margin-left: -260px; }
   }
 </style>
 </head>
 <body class="text-ink min-h-screen">
-<div class="flex min-h-screen">
+
+<!-- ===================== LAYAR LOGIN ===================== -->
+<div id="layarLogin" class="min-h-screen w-full flex items-center justify-center px-4 py-10">
+  <div class="w-full max-w-sm">
+    <div class="flex flex-col items-center text-center mb-6">
+      <div class="w-12 h-12 rounded-xl bg-ink text-paper flex items-center justify-center font-display font-bold text-lg mb-3">Rp</div>
+      <h1 class="font-display font-semibold text-xl">Catatan Keuangan</h1>
+      <p class="text-sm text-ink/50 mt-1">Masuk dengan akun Anda untuk melanjutkan</p>
+    </div>
+
+    <div class="bg-card border border-line rounded-2xl p-6 sm:p-7">
+      <form id="formLogin" class="space-y-4">
+        <div id="blokUrlServer" class="hidden flex-col gap-1">
+          <label class="text-xs font-medium text-ink/60 text-center block">URL Server (Web App)</label>
+          <input type="url" id="loginApiUrl" placeholder="https://script.google.com/macros/s/xxxxx/exec" class="focus-ring border border-line rounded-lg px-3 py-2.5 text-sm bg-paper w-full text-center">
+        </div>
+
+        <div class="flex flex-col gap-1">
+          <label class="text-xs font-medium text-ink/60 text-center block">Username</label>
+          <input required type="text" id="loginUsername" autocomplete="username" class="focus-ring border border-line rounded-lg px-3 py-2.5 text-sm bg-paper w-full text-center">
+        </div>
+
+        <div class="flex flex-col gap-1">
+          <label class="text-xs font-medium text-ink/60 text-center block">Password</label>
+          <input required type="password" id="loginPassword" autocomplete="current-password" class="focus-ring border border-line rounded-lg px-3 py-2.5 text-sm bg-paper w-full text-center">
+        </div>
+
+        <button type="submit" id="btnLogin" class="w-full py-2.5 rounded-lg bg-ink text-paper font-medium text-sm hover:bg-ink/85 transition-colors">
+          Masuk
+        </button>
+      </form>
+
+      <p id="loginPesan" class="text-xs text-center mt-4"></p>
+
+      <button id="btnUbahServer" type="button" class="w-full text-center text-xs text-ink/40 hover:text-ink transition-colors mt-4">
+        Ubah URL server
+      </button>
+    </div>
+
+    <p class="text-xs text-ink/35 text-center mt-5">Data tersimpan langsung di spreadsheet Google Sheets Anda melalui koneksi terenkripsi.</p>
+  </div>
+</div>
+
+<!-- ===================== APLIKASI ===================== -->
+<div id="aplikasi" class="hidden flex min-h-screen">
 
   <!-- SIDEBAR -->
   <aside id="sidebar" class="bg-card border-r border-line flex flex-col shrink-0">
@@ -68,16 +112,20 @@
       <div class="min-w-0">
         <h1 class="font-display font-semibold text-base leading-tight truncate">Catatan Keuangan</h1>
         <p class="text-[11px] text-ink/50 -mt-0.5 flex items-center gap-1.5">
-          <span id="statusDot" class="w-1.5 h-1.5 rounded-full dot-offline shrink-0"></span>
-          <span id="statusText" class="truncate">Belum terhubung</span>
+          <span id="statusDot" class="w-1.5 h-1.5 rounded-full dot-online shrink-0"></span>
+          <span id="statusText" class="truncate">Masuk sebagai ...</span>
         </p>
       </div>
     </div>
     <nav class="flex-1 overflow-y-auto p-3 space-y-1" id="navList"></nav>
-    <div class="p-3 border-t border-line space-y-2">
+    <div class="p-3 border-t border-line space-y-1.5">
       <button id="btnSync" class="navlink w-full">
         <svg id="syncIcon" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2v6h-6M3 22v-6h6M3.5 9a9 9 0 0114.5-4.5M20.5 15a9 9 0 01-14.5 4.5"/></svg>
-        Sinkron Spreadsheet
+        Info Koneksi
+      </button>
+      <button id="btnLogout" class="navlink w-full text-keluar">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+        Keluar
       </button>
     </div>
   </aside>
@@ -85,7 +133,7 @@
   <!-- MAIN -->
   <div class="flex-1 min-w-0 flex flex-col">
     <header class="border-b border-line bg-paper/90 backdrop-blur sticky top-0 z-20">
-      <div class="px-4 sm:px-6 py-3.5 flex items-center gap-3">
+      <div class="px-4 sm:px-6 py-3.5 flex items-center gap-3 max-w-6xl mx-auto w-full">
         <button id="btnToggleSidebar" class="w-9 h-9 shrink-0 rounded-lg border border-line bg-card hover:bg-ink hover:text-paper transition-colors flex items-center justify-center">
           <svg xmlns="http://www.w3.org/2000/svg" class="w-4.5 h-4.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
         </button>
@@ -93,7 +141,7 @@
       </div>
     </header>
 
-    <main class="px-4 sm:px-6 py-6 space-y-6 max-w-6xl w-full">
+    <main class="px-4 sm:px-6 py-6 space-y-6 max-w-6xl w-full mx-auto">
 
       <!-- ===================== VIEW: TRANSAKSI (per sheet) ===================== -->
       <div id="viewTransaksi" class="space-y-6">
@@ -117,15 +165,6 @@
                 <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 19h16"/></svg>
                 Ekspor CSV
               </button>
-              <button id="btnBackup" class="text-sm font-medium px-4 py-2 rounded-lg border border-line bg-card hover:bg-paper transition-colors flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 19h16"/></svg>
-                Cadangkan
-              </button>
-              <button id="btnRestore" class="text-sm font-medium px-4 py-2 rounded-lg border border-line bg-card hover:bg-paper transition-colors flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21V9m0 0l-4 4m4-4l4 4M4 5h16"/></svg>
-                Pulihkan
-              </button>
-              <input type="file" id="fileRestore" accept="application/json" class="hidden">
             </div>
           </div>
           <p id="filterInfo" class="text-xs text-ink/45 mt-3"></p>
@@ -241,7 +280,7 @@
 
       <!-- ===================== VIEW: KATEGORI ===================== -->
       <div id="viewKategori" class="hidden space-y-6">
-        <section class="bg-card border border-line rounded-2xl p-5 max-w-xl">
+        <section class="bg-card border border-line rounded-2xl p-5 max-w-xl mx-auto">
           <h2 class="font-display font-semibold text-base mb-4">Tambah Kategori</h2>
           <form id="formKategoriBaru" class="space-y-3">
             <div class="grid grid-cols-2 gap-2 bg-paper p-1 rounded-lg border border-line">
@@ -256,7 +295,7 @@
           </form>
         </section>
 
-        <section class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl">
+        <section class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
           <div class="bg-card border border-line rounded-2xl p-5">
             <h3 class="font-display font-semibold text-sm mb-3 text-masuk">Kategori Pemasukan</h3>
             <ul id="listKategoriMasuk" class="space-y-2"></ul>
@@ -272,24 +311,17 @@
   </div>
 </div>
 
-<!-- MODAL SINKRON -->
+<!-- MODAL INFO KONEKSI -->
 <div id="modalSync" class="hidden fixed inset-0 z-50 items-center justify-center p-4">
   <div id="syncOverlay" class="absolute inset-0 bg-ink/40"></div>
-  <div class="relative bg-card border border-line rounded-2xl p-5 w-full max-w-md">
+  <div class="relative bg-card border border-line rounded-2xl p-5 w-full max-w-sm text-center">
     <div class="flex items-center justify-between mb-4">
-      <h3 class="font-display font-semibold text-base">Sinkron Spreadsheet</h3>
+      <h3 class="font-display font-semibold text-base">Info Koneksi</h3>
       <button id="btnTutupSync" class="text-ink/40 hover:text-ink text-xl leading-none">&times;</button>
     </div>
-    <p class="text-xs text-ink/50 mb-3">Tempel URL Web App Google Apps Script (diakhiri <code class="bg-paper px-1 rounded">/exec</code>) yang sudah Anda deploy dari spreadsheet Cashflow.</p>
-    <div class="flex flex-col gap-2">
-      <input type="url" id="inputApiUrl" placeholder="https://script.google.com/macros/s/xxxxx/exec" class="focus-ring border border-line rounded-lg px-3 py-2 text-sm bg-paper">
-      <div class="flex gap-2">
-        <button id="btnSimpanSync" class="flex-1 py-2 rounded-lg bg-ink text-paper text-sm font-medium hover:bg-ink/85 transition-colors">Simpan &amp; Muat Data</button>
-        <button id="btnPutuskanSync" class="py-2 px-3 rounded-lg border border-line text-sm font-medium hover:bg-paper transition-colors">Putuskan</button>
-      </div>
-    </div>
-    <p id="syncPesan" class="text-xs mt-3"></p>
-    <p class="text-xs text-ink/40 mt-3">Selama belum terhubung, data tetap tersimpan otomatis di LocalStorage perangkat ini. Setelah terhubung, semua perubahan langsung ditulis ke spreadsheet.</p>
+    <p class="text-sm text-ink/60">Masuk sebagai <span id="syncUserInfo" class="font-medium text-ink"></span></p>
+    <p class="text-xs text-ink/40 mt-2 break-all" id="syncUrlInfo"></p>
+    <p class="text-xs text-ink/40 mt-4">Sesi otomatis berakhir setelah 6 jam tidak aktif. Untuk mengganti akun atau server, gunakan tombol Keluar di sidebar.</p>
   </div>
 </div>
 
@@ -299,34 +331,26 @@
 
   // ---------- KONFIGURASI SHEET ----------
   const SHEETS = [
-    { key: 'Catatan Harian Farqi', nama: 'Catatan Harian Farqi', icon: 'user' },
-    { key: 'Catatan Harian Putri', nama: 'Catatan Harian Putri', icon: 'user' },
+    { key: 'Catatan Harian Farqi', nama: 'Catatan Harian Farqi' },
+    { key: 'Catatan Harian Putri', nama: 'Catatan Harian Putri' },
   ];
   const VIEW_KATEGORI = '__kategori__';
 
   const LS_KATEGORI = 'ck_kategori';
   const LS_APIURL   = 'ck_apiurl';
   const LS_SIDEBAR  = 'ck_sidebar_collapsed';
+  const LS_TOKEN    = 'ck_token';
+  const LS_USERNAME = 'ck_username';
   function lsTransaksiKey(sheetKey){ return 'ck_transaksi::' + sheetKey; }
 
-  const defaultKategori = [
-    { kode: 1, nama: 'Salary', jenis: 'pemasukan' },
-    { kode: 9, nama: 'Piutang', jenis: 'pemasukan' },
-    { kode: 2, nama: 'Food & Beverage', jenis: 'pengeluaran' },
-    { kode: 3, nama: 'Transport', jenis: 'pengeluaran' },
-    { kode: 4, nama: 'Bills', jenis: 'pengeluaran' },
-    { kode: 5, nama: 'Maintenance/Service', jenis: 'pengeluaran' },
-    { kode: 6, nama: 'Savings/Invest', jenis: 'pengeluaran' },
-    { kode: 7, nama: 'Entertainment', jenis: 'pengeluaran' },
-    { kode: 8, nama: 'Groceries', jenis: 'pengeluaran' },
-    { kode: 10, nama: 'Lain-lain', jenis: 'pengeluaran' },
-  ];
-
-  let kategori = loadJSON(LS_KATEGORI, defaultKategori);
+  let kategori = loadJSON(LS_KATEGORI, []);
   let transaksiCache = {};
   SHEETS.forEach(s => { transaksiCache[s.key] = loadJSON(lsTransaksiKey(s.key), []); });
 
-  let apiUrl = localStorage.getItem(LS_APIURL) || '';
+  let apiUrl   = localStorage.getItem(LS_APIURL) || '';
+  let token    = localStorage.getItem(LS_TOKEN) || '';
+  let username = localStorage.getItem(LS_USERNAME) || '';
+
   let currentView = SHEETS[0].key;
   let jenisAktif = 'pemasukan';
   let jenisKategoriAktif = 'pemasukan';
@@ -345,8 +369,6 @@
   }
   function saveTransaksi(sheetKey){ localStorage.setItem(lsTransaksiKey(sheetKey), JSON.stringify(transaksiCache[sheetKey])); }
   function saveKategori(){ localStorage.setItem(LS_KATEGORI, JSON.stringify(kategori)); }
-
-  function uid(){ return 'local_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,7); }
 
   function formatRupiah(angka){
     const n = Math.round(angka || 0);
@@ -374,6 +396,17 @@
 
   // ---------- ELEMENTS ----------
   const els = {
+    layarLogin: document.getElementById('layarLogin'),
+    aplikasi: document.getElementById('aplikasi'),
+    formLogin: document.getElementById('formLogin'),
+    blokUrlServer: document.getElementById('blokUrlServer'),
+    loginApiUrl: document.getElementById('loginApiUrl'),
+    loginUsername: document.getElementById('loginUsername'),
+    loginPassword: document.getElementById('loginPassword'),
+    btnLogin: document.getElementById('btnLogin'),
+    loginPesan: document.getElementById('loginPesan'),
+    btnUbahServer: document.getElementById('btnUbahServer'),
+
     sidebar: document.getElementById('sidebar'),
     btnToggleSidebar: document.getElementById('btnToggleSidebar'),
     navList: document.getElementById('navList'),
@@ -386,10 +419,9 @@
     modalSync: document.getElementById('modalSync'),
     syncOverlay: document.getElementById('syncOverlay'),
     btnTutupSync: document.getElementById('btnTutupSync'),
-    inputApiUrl: document.getElementById('inputApiUrl'),
-    btnSimpanSync: document.getElementById('btnSimpanSync'),
-    btnPutuskanSync: document.getElementById('btnPutuskanSync'),
-    syncPesan: document.getElementById('syncPesan'),
+    syncUserInfo: document.getElementById('syncUserInfo'),
+    syncUrlInfo: document.getElementById('syncUrlInfo'),
+    btnLogout: document.getElementById('btnLogout'),
 
     viewTransaksi: document.getElementById('viewTransaksi'),
     viewKategori: document.getElementById('viewKategori'),
@@ -399,9 +431,6 @@
     btnReset: document.getElementById('btnReset'),
     filterInfo: document.getElementById('filterInfo'),
     btnExport: document.getElementById('btnExport'),
-    btnBackup: document.getElementById('btnBackup'),
-    btnRestore: document.getElementById('btnRestore'),
-    fileRestore: document.getElementById('fileRestore'),
 
     saldoTotal: document.getElementById('saldoTotal'),
     totalMasuk: document.getElementById('totalMasuk'),
@@ -434,6 +463,181 @@
     listKategoriMasuk: document.getElementById('listKategoriMasuk'),
     listKategoriKeluar: document.getElementById('listKategoriKeluar'),
   };
+
+  // ======================================================================
+  // LOGIN
+  // ======================================================================
+  function tampilkanLogin(pesan){
+    els.aplikasi.classList.add('hidden');
+    els.layarLogin.classList.remove('hidden');
+    els.loginApiUrl.value = apiUrl;
+    els.blokUrlServer.classList.toggle('hidden', !!apiUrl);
+    els.blokUrlServer.classList.toggle('flex', !apiUrl);
+    if (pesan) { els.loginPesan.textContent = pesan; els.loginPesan.className = 'text-xs text-center mt-4 text-keluar'; }
+    else { els.loginPesan.textContent = ''; }
+    setTimeout(() => els.loginUsername.focus(), 50);
+  }
+
+  function tampilkanAplikasi(){
+    els.layarLogin.classList.add('hidden');
+    els.aplikasi.classList.remove('hidden');
+    els.aplikasi.classList.add('flex');
+    els.statusText.textContent = 'Masuk sebagai ' + username;
+    els.syncUserInfo.textContent = username;
+    els.syncUrlInfo.textContent = apiUrl;
+  }
+
+  els.btnUbahServer.addEventListener('click', () => {
+    const tampil = els.blokUrlServer.classList.contains('hidden');
+    els.blokUrlServer.classList.toggle('hidden', !tampil);
+    els.blokUrlServer.classList.toggle('flex', tampil);
+    if (tampil) els.loginApiUrl.focus();
+  });
+
+  els.formLogin.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const urlBaru = els.loginApiUrl.value.trim();
+    if (urlBaru) apiUrl = urlBaru;
+    if (!apiUrl) {
+      els.loginPesan.textContent = 'Isi dulu URL server (Web App) sebelum login.';
+      els.loginPesan.className = 'text-xs text-center mt-4 text-keluar';
+      els.blokUrlServer.classList.remove('hidden');
+      els.blokUrlServer.classList.add('flex');
+      return;
+    }
+    const u = els.loginUsername.value.trim();
+    const p = els.loginPassword.value;
+    if (!u || !p) return;
+
+    els.btnLogin.disabled = true;
+    els.btnLogin.textContent = 'Memeriksa...';
+    els.loginPesan.textContent = '';
+
+    try {
+      const res = await fetch(apiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: 'login', username: u, password: p })
+      });
+      const data = await res.json();
+      if (!data.ok) {
+        els.loginPesan.textContent = data.error || 'Login gagal.';
+        els.loginPesan.className = 'text-xs text-center mt-4 text-keluar';
+        els.btnLogin.disabled = false;
+        els.btnLogin.textContent = 'Masuk';
+        return;
+      }
+      token = data.token;
+      username = data.username;
+      localStorage.setItem(LS_APIURL, apiUrl);
+      localStorage.setItem(LS_TOKEN, token);
+      localStorage.setItem(LS_USERNAME, username);
+      els.loginPassword.value = '';
+      els.btnLogin.disabled = false;
+      els.btnLogin.textContent = 'Masuk';
+      bootAplikasi();
+    } catch (err) {
+      els.loginPesan.textContent = 'Tidak bisa menghubungi server. Cek URL & koneksi internet.';
+      els.loginPesan.className = 'text-xs text-center mt-4 text-keluar';
+      els.btnLogin.disabled = false;
+      els.btnLogin.textContent = 'Masuk';
+    }
+  });
+
+  function paksaLoginUlang(pesan){
+    token = '';
+    localStorage.removeItem(LS_TOKEN);
+    localStorage.removeItem(LS_USERNAME);
+    tampilkanLogin(pesan || 'Sesi berakhir, silakan login kembali.');
+  }
+
+  els.btnLogout.addEventListener('click', async () => {
+    if (!confirm('Keluar dari aplikasi?')) return;
+    try {
+      if (apiUrl && token) {
+        await fetch(apiUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({ action: 'logout', token })
+        });
+      }
+    } catch(e) {}
+    token = '';
+    username = '';
+    localStorage.removeItem(LS_TOKEN);
+    localStorage.removeItem(LS_USERNAME);
+    tampilkanLogin();
+  });
+
+  // ---------- MODAL INFO KONEKSI ----------
+  els.btnSync.addEventListener('click', () => {
+    els.modalSync.classList.remove('hidden');
+    els.modalSync.classList.add('flex');
+  });
+  function tutupModalSync(){
+    els.modalSync.classList.add('hidden');
+    els.modalSync.classList.remove('flex');
+  }
+  els.btnTutupSync.addEventListener('click', tutupModalSync);
+  els.syncOverlay.addEventListener('click', tutupModalSync);
+
+  function setSinkronBerjalan(aktif){
+    els.syncIcon.classList.toggle('spin', aktif);
+  }
+
+  // ======================================================================
+  // KOMUNIKASI SERVER (semua butuh token)
+  // ======================================================================
+  async function muatDariServer(sheetKey){
+    setSinkronBerjalan(true);
+    try {
+      const res = await fetch(apiUrl + '?sheet=' + encodeURIComponent(sheetKey) + '&token=' + encodeURIComponent(token), { method: 'GET' });
+      const data = await res.json();
+      setSinkronBerjalan(false);
+      if (!data.ok) {
+        if (data.needLogin) { paksaLoginUlang(data.error); return { ok:false, error: data.error }; }
+        return { ok:false, error: data.error || 'Gagal memuat data.' };
+      }
+      transaksiCache[sheetKey] = data.transaksi;
+      saveTransaksi(sheetKey);
+      kategori = data.kategori;
+      saveKategori();
+      if (currentView === sheetKey) renderAll();
+      if (currentView === VIEW_KATEGORI) renderListKategori();
+      isiDropdownKategori();
+      return { ok:true };
+    } catch (err) {
+      setSinkronBerjalan(false);
+      return { ok:false, error: err.message || 'Tidak bisa menghubungi server.' };
+    }
+  }
+
+  async function kirimKeServer(action, payload){
+    setSinkronBerjalan(true);
+    try {
+      const res = await fetch(apiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(Object.assign({ action, token }, payload))
+      });
+      const data = await res.json();
+      setSinkronBerjalan(false);
+      if (!data.ok) {
+        if (data.needLogin) { paksaLoginUlang(data.error); return { ok:false, error: data.error }; }
+        return { ok:false, error: data.error || 'Permintaan gagal.' };
+      }
+      if (payload.sheet && data.transaksi) {
+        transaksiCache[payload.sheet] = data.transaksi;
+        saveTransaksi(payload.sheet);
+      }
+      kategori = data.kategori;
+      saveKategori();
+      return { ok:true };
+    } catch (err) {
+      setSinkronBerjalan(false);
+      return { ok:false, error: err.message || 'Tidak bisa menghubungi server.' };
+    }
+  }
 
   // ---------- SIDEBAR: NAV & TOGGLE ----------
   function iconSvg(name){
@@ -470,7 +674,7 @@
       keluarModeEdit();
       isiDropdownKategori();
       renderAll();
-      if (apiUrl) muatDariServer(view);
+      muatDariServer(view);
     }
     if (window.innerWidth < 1024) els.sidebar.classList.add('collapsed');
   }
@@ -479,126 +683,16 @@
     els.sidebar.classList.toggle('collapsed');
     localStorage.setItem(LS_SIDEBAR, els.sidebar.classList.contains('collapsed') ? '1' : '0');
   });
-  if (localStorage.getItem(LS_SIDEBAR) === '1' || window.innerWidth < 1024) {
-    els.sidebar.classList.add('collapsed');
-  }
 
-  // ---------- STATUS KONEKSI ----------
-  function perbaruiStatus(){
-    if (apiUrl) {
-      els.statusDot.classList.remove('dot-offline');
-      els.statusDot.classList.add('dot-online');
-      els.statusText.textContent = 'Terhubung';
-    } else {
-      els.statusDot.classList.remove('dot-online');
-      els.statusDot.classList.add('dot-offline');
-      els.statusText.textContent = 'Belum terhubung';
-    }
-  }
-  function setSinkronBerjalan(aktif){
-    els.syncIcon.classList.toggle('spin', aktif);
-  }
-
-  // ---------- MODAL SINKRON ----------
-  els.btnSync.addEventListener('click', () => {
-    els.inputApiUrl.value = apiUrl;
-    els.syncPesan.textContent = '';
-    els.modalSync.classList.remove('hidden');
-    els.modalSync.classList.add('flex');
-  });
-  function tutupModalSync(){
-    els.modalSync.classList.add('hidden');
-    els.modalSync.classList.remove('flex');
-  }
-  els.btnTutupSync.addEventListener('click', tutupModalSync);
-  els.syncOverlay.addEventListener('click', tutupModalSync);
-
-  els.btnSimpanSync.addEventListener('click', async () => {
-    const url = els.inputApiUrl.value.trim();
-    if (!url) { els.syncPesan.textContent = 'Isi dulu URL Web App-nya.'; els.syncPesan.className = 'text-xs mt-3 text-keluar'; return; }
-    apiUrl = url;
-    localStorage.setItem(LS_APIURL, apiUrl);
-    perbaruiStatus();
-    els.syncPesan.textContent = 'Menghubungkan & memuat data...';
-    els.syncPesan.className = 'text-xs mt-3 text-ink/50';
-    const sheetUntukDimuat = currentView === VIEW_KATEGORI ? SHEETS[0].key : currentView;
-    const hasil = await muatDariServer(sheetUntukDimuat);
-    if (hasil.ok) {
-      els.syncPesan.textContent = `Berhasil terhubung.`;
-      els.syncPesan.className = 'text-xs mt-3 text-masuk';
-      setTimeout(tutupModalSync, 900);
-    } else {
-      els.syncPesan.textContent = 'Gagal terhubung: ' + hasil.error;
-      els.syncPesan.className = 'text-xs mt-3 text-keluar';
-    }
-  });
-
-  els.btnPutuskanSync.addEventListener('click', () => {
-    apiUrl = '';
-    localStorage.removeItem(LS_APIURL);
-    els.inputApiUrl.value = '';
-    perbaruiStatus();
-    els.syncPesan.textContent = 'Koneksi diputus. Data lokal tetap tersimpan di perangkat ini.';
-    els.syncPesan.className = 'text-xs mt-3 text-ink/50';
-  });
-
-  // ---------- KOMUNIKASI SERVER ----------
-  async function muatDariServer(sheetKey){
-    if (!apiUrl) return { ok:false, error:'Belum terhubung.' };
-    setSinkronBerjalan(true);
-    try {
-      const res = await fetch(apiUrl + '?sheet=' + encodeURIComponent(sheetKey), { method: 'GET' });
-      const data = await res.json();
-      setSinkronBerjalan(false);
-      if (!data.ok) return { ok:false, error: data.error || 'Gagal memuat data.' };
-      transaksiCache[sheetKey] = data.transaksi;
-      saveTransaksi(sheetKey);
-      kategori = data.kategori;
-      saveKategori();
-      if (currentView === sheetKey) { renderAll(); }
-      if (currentView === VIEW_KATEGORI) { renderListKategori(); }
-      isiDropdownKategori();
-      return { ok:true };
-    } catch (err) {
-      setSinkronBerjalan(false);
-      return { ok:false, error: err.message || 'Tidak bisa menghubungi server.' };
-    }
-  }
-
-  async function kirimKeServer(action, payload){
-    if (!apiUrl) return { ok:false, offline:true };
-    setSinkronBerjalan(true);
-    try {
-      const res = await fetch(apiUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify(Object.assign({ action }, payload))
-      });
-      const data = await res.json();
-      setSinkronBerjalan(false);
-      if (!data.ok) return { ok:false, error: data.error || 'Permintaan gagal.' };
-      if (payload.sheet && data.transaksi) {
-        transaksiCache[payload.sheet] = data.transaksi;
-        saveTransaksi(payload.sheet);
-      }
-      kategori = data.kategori;
-      saveKategori();
-      return { ok:true };
-    } catch (err) {
-      setSinkronBerjalan(false);
-      return { ok:false, error: err.message || 'Tidak bisa menghubungi server.' };
-    }
-  }
-
-  // ---------- SALDO LOKAL (MODE OFFLINE) ----------
+  // ---------- SALDO LOKAL (fallback selagi menunggu respons server) ----------
   function hitungSaldoLokal(sheetKey){
     const list = transaksiCache[sheetKey];
     const urut = list.map((t, idx) => ({ t, idx }))
       .sort((a,b) => (a.t.tanggal || '').localeCompare(b.t.tanggal || '') || a.idx - b.idx);
     let saldo = 0;
     urut.forEach(({t}) => {
-      saldo += (t.pemasukan || 0) - (t.pengeluaran || 0);
-      t.saldo = saldo;
+      if (t.saldo == null) { saldo += (t.pemasukan || 0) - (t.pengeluaran || 0); t.saldo = saldo; }
+      else { saldo = t.saldo; }
     });
   }
 
@@ -644,39 +738,20 @@
     const sheetKey = currentView;
 
     els.btnSimpanTransaksi.disabled = true;
-
-    if (apiUrl) {
-      const aksi = editingId ? 'updateTransaksi' : 'addTransaksi';
-      const payload = editingId ? { sheet: sheetKey, baris: editingId, data } : { sheet: sheetKey, data };
-      const hasil = await kirimKeServer(aksi, payload);
-      els.btnSimpanTransaksi.disabled = false;
-      if (!hasil.ok) { alert('Gagal menyimpan ke spreadsheet: ' + hasil.error); return; }
-      if (editingId) keluarModeEdit(); else { els.inputNominal.value=''; els.inputCatatan.value=''; }
-      renderAll();
-      return;
-    }
-
-    const list = transaksiCache[sheetKey];
-    if (editingId) {
-      const idx = list.findIndex(t => t.id === editingId);
-      if (idx !== -1) list[idx] = Object.assign({}, list[idx], data);
-      saveTransaksi(sheetKey);
-      keluarModeEdit();
-    } else {
-      list.push(Object.assign({ id: uid() }, data));
-      saveTransaksi(sheetKey);
-      els.inputNominal.value = '';
-      els.inputCatatan.value = '';
-    }
+    const aksi = editingId ? 'updateTransaksi' : 'addTransaksi';
+    const payload = editingId ? { sheet: sheetKey, baris: editingId, data } : { sheet: sheetKey, data };
+    const hasil = await kirimKeServer(aksi, payload);
     els.btnSimpanTransaksi.disabled = false;
+    if (!hasil.ok) { if (hasil.error) alert('Gagal menyimpan ke spreadsheet: ' + hasil.error); return; }
+    if (editingId) keluarModeEdit(); else { els.inputNominal.value=''; els.inputCatatan.value=''; }
     renderAll();
   });
 
-  function masukModeEdit(idOrBaris){
+  function masukModeEdit(baris){
     const list = transaksiCache[currentView];
-    const t = apiUrl ? list.find(x => x.baris === idOrBaris) : list.find(x => x.id === idOrBaris);
+    const t = list.find(x => x.baris === baris);
     if (!t) return;
-    editingId = idOrBaris;
+    editingId = baris;
     setJenisAktif(t.pemasukan > 0 ? 'pemasukan' : 'pengeluaran');
     els.inputTanggal.value = t.tanggal;
     isiDropdownKategori(t.kodeKategori);
@@ -712,7 +787,7 @@
 
   function dataTerfilter(){
     const sheetKey = currentView;
-    if (!apiUrl) hitungSaldoLokal(sheetKey);
+    hitungSaldoLokal(sheetKey);
     const mulai = els.filterMulai.value;
     const selesai = els.filterSelesai.value;
     return transaksiCache[sheetKey].filter(t => {
@@ -750,9 +825,7 @@
       els.tabelKosong.classList.remove('hidden');
     } else {
       els.tabelKosong.classList.add('hidden');
-      els.tabelBody.innerHTML = urutTerbaru.map(t => {
-        const idAksi = apiUrl ? t.baris : t.id;
-        return `
+      els.tabelBody.innerHTML = urutTerbaru.map(t => `
           <tr class="row-in">
             <td class="py-2.5 pr-3 whitespace-nowrap">${formatTanggal(t.tanggal)}</td>
             <td class="py-2.5 pr-3 text-ink/50">${String(t.kodeKategori ?? '').padStart(2,'0')}</td>
@@ -762,35 +835,24 @@
             <td class="py-2.5 pr-3 text-right font-medium text-keluar">${t.pengeluaran ? formatRupiah(t.pengeluaran) : ''}</td>
             <td class="py-2.5 pr-3 text-right text-ink/70">${formatRupiah(t.saldo)}</td>
             <td class="py-2.5 pl-3 text-right whitespace-nowrap">
-              <button data-id="${idAksi}" class="btnEdit text-xs font-medium text-ink/40 hover:text-ink transition-colors mr-3">Edit</button>
-              <button data-id="${idAksi}" class="btnHapus text-xs font-medium text-ink/40 hover:text-keluar transition-colors">Hapus</button>
+              <button data-id="${t.baris}" class="btnEdit text-xs font-medium text-ink/40 hover:text-ink transition-colors mr-3">Edit</button>
+              <button data-id="${t.baris}" class="btnHapus text-xs font-medium text-ink/40 hover:text-keluar transition-colors">Hapus</button>
             </td>
-          </tr>`;
-      }).join('');
+          </tr>`).join('');
     }
     els.jumlahTransaksi.textContent = data.length ? `${data.length} transaksi` : '';
   }
 
   els.tabelBody.addEventListener('click', async (e) => {
     const btnEdit = e.target.closest('.btnEdit');
-    if (btnEdit) {
-      const id = apiUrl ? Number(btnEdit.dataset.id) : btnEdit.dataset.id;
-      masukModeEdit(id);
-      return;
-    }
+    if (btnEdit) { masukModeEdit(Number(btnEdit.dataset.id)); return; }
     const btnHapus = e.target.closest('.btnHapus');
     if (btnHapus) {
       if (!confirm('Hapus transaksi ini?')) return;
-      const id = apiUrl ? Number(btnHapus.dataset.id) : btnHapus.dataset.id;
+      const baris = Number(btnHapus.dataset.id);
       const sheetKey = currentView;
-      if (apiUrl) {
-        const hasil = await kirimKeServer('deleteTransaksi', { sheet: sheetKey, baris: id });
-        if (!hasil.ok) { alert('Gagal menghapus di spreadsheet: ' + hasil.error); return; }
-      } else {
-        if (editingId === id) keluarModeEdit();
-        transaksiCache[sheetKey] = transaksiCache[sheetKey].filter(t => t.id !== id);
-        saveTransaksi(sheetKey);
-      }
+      const hasil = await kirimKeServer('deleteTransaksi', { sheet: sheetKey, baris });
+      if (!hasil.ok) { if (hasil.error) alert('Gagal menghapus di spreadsheet: ' + hasil.error); return; }
       renderAll();
     }
   });
@@ -888,56 +950,6 @@
     URL.revokeObjectURL(url);
   });
 
-  // ---------- BACKUP (EXPOR JSON) ----------
-  els.btnBackup.addEventListener('click', () => {
-    const payload = { versi: 3, dibuatPada: new Date().toISOString(), transaksiCache, kategori };
-    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    const tgl = new Date().toISOString().slice(0,10);
-    a.href = url;
-    a.download = `cadangan-catatan-keuangan-${tgl}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  });
-
-  // ---------- RESTORE (IMPOR JSON, hanya mode offline) ----------
-  els.btnRestore.addEventListener('click', () => {
-    if (apiUrl) { alert('Sedang terhubung ke spreadsheet — data sumbernya adalah spreadsheet itu sendiri. Putuskan koneksi dulu jika ingin memulihkan cadangan lokal.'); return; }
-    els.fileRestore.click();
-  });
-
-  els.fileRestore.addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      let data;
-      try { data = JSON.parse(ev.target.result); }
-      catch (err) { alert('File tidak valid.'); e.target.value=''; return; }
-      if (!data || !data.transaksiCache || !Array.isArray(data.kategori)) {
-        alert('Format file tidak dikenali.'); e.target.value=''; return;
-      }
-      const totalTx = Object.values(data.transaksiCache).reduce((n,arr) => n + (arr?.length||0), 0);
-      const ok = confirm(`File berisi ${totalTx} transaksi (semua sheet) dan ${data.kategori.length} kategori.\n\nIni akan MENGGANTI data lokal saat ini. Lanjutkan?`);
-      if (!ok) { e.target.value=''; return; }
-      SHEETS.forEach(s => {
-        transaksiCache[s.key] = data.transaksiCache[s.key] || [];
-        saveTransaksi(s.key);
-      });
-      kategori = data.kategori;
-      saveKategori();
-      keluarModeEdit();
-      els.filterMulai.value=''; els.filterSelesai.value='';
-      renderAll();
-      alert('Data berhasil dipulihkan.');
-      e.target.value='';
-    };
-    reader.readAsText(file);
-  });
-
   // ---------- HALAMAN KATEGORI ----------
   els.jenisKategoriBtns.forEach(btn => {
     btn.addEventListener('click', () => {
@@ -951,15 +963,8 @@
     e.preventDefault();
     const nama = els.inputKategoriBaru.value.trim();
     if (!nama) return;
-
-    if (apiUrl) {
-      const hasil = await kirimKeServer('addKategori', { data: { nama, jenis: jenisKategoriAktif } });
-      if (!hasil.ok) { alert('Gagal menambah kategori di spreadsheet: ' + hasil.error); return; }
-    } else {
-      const maxKode = kategori.reduce((m,k) => Math.max(m, Number(k.kode)||0), 0);
-      kategori.push({ kode: maxKode + 1, nama, jenis: jenisKategoriAktif });
-      saveKategori();
-    }
+    const hasil = await kirimKeServer('addKategori', { data: { nama, jenis: jenisKategoriAktif } });
+    if (!hasil.ok) { if (hasil.error) alert('Gagal menambah kategori di spreadsheet: ' + hasil.error); return; }
     els.inputKategoriBaru.value = '';
     renderListKategori();
     isiDropdownKategori();
@@ -1008,15 +1013,8 @@
     if (!input) return;
     const namaBaru = input.value.trim();
     if (!namaBaru) { input.focus(); return; }
-
-    if (apiUrl) {
-      const hasil = await kirimKeServer('updateKategori', { kode, data: { nama: namaBaru } });
-      if (!hasil.ok) { alert('Gagal menyimpan perubahan kategori: ' + hasil.error); return; }
-    } else {
-      const k = kategori.find(x => Number(x.kode) === Number(kode));
-      if (k) k.nama = namaBaru;
-      saveKategori();
-    }
+    const hasil = await kirimKeServer('updateKategori', { kode, data: { nama: namaBaru } });
+    if (!hasil.ok) { if (hasil.error) alert('Gagal menyimpan perubahan kategori: ' + hasil.error); return; }
     editingKategoriId = null;
     renderListKategori();
     isiDropdownKategori();
@@ -1038,13 +1036,8 @@
       const kode = Number(btnHapus.dataset.id);
       if (!confirm('Hapus kategori ini? Transaksi lama tetap menampilkan nama kategori aslinya.')) return;
       (async () => {
-        if (apiUrl) {
-          const hasil = await kirimKeServer('deleteKategori', { kode });
-          if (!hasil.ok) { alert('Gagal menghapus kategori: ' + hasil.error); return; }
-        } else {
-          kategori = kategori.filter(k => Number(k.kode) !== kode);
-          saveKategori();
-        }
+        const hasil = await kirimKeServer('deleteKategori', { kode });
+        if (!hasil.ok) { if (hasil.error) alert('Gagal menghapus kategori: ' + hasil.error); return; }
         renderListKategori();
         isiDropdownKategori();
         renderAll();
@@ -1076,12 +1069,25 @@
     renderChart(data);
   }
 
-  perbaruiStatus();
-  renderNav();
-  setJenisAktif('pemasukan');
-  setTanggalHariIni();
-  renderAll();
-  if (apiUrl) muatDariServer(currentView);
+  async function bootAplikasi(){
+    tampilkanAplikasi();
+    renderNav();
+    setJenisAktif('pemasukan');
+    setTanggalHariIni();
+    if (localStorage.getItem(LS_SIDEBAR) === '1' || window.innerWidth < 1024) {
+      els.sidebar.classList.add('collapsed');
+    }
+    isiDropdownKategori();
+    renderAll();
+    await muatDariServer(currentView);
+  }
+
+  // ---------- MULAI ----------
+  if (apiUrl && token) {
+    bootAplikasi();
+  } else {
+    tampilkanLogin();
+  }
 
 })();
 </script>
